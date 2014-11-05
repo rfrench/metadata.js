@@ -1,0 +1,185 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<script type="text/javascript" src="metadata.js"></script>
+<script type="text/javascript" src="jdataview.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=true"></script>
+<script type="text/javascript">
+var index = 1;
+
+function handleFiles(e) {
+  var file = e.target.files[0];
+  var ctx = document.getElementById('canvas').getContext('2d');
+  var reader = new FileReader;
+
+ reader.onload = function(event) {
+  var blob = new Blob([event.target.result]);
+  window.URL = window.URL || window.webkitURL;
+  var blobURL = window.URL.createObjectURL(blob);
+  
+    var img = new Image();
+    img.src = blobURL;
+    
+    img.onload = function() {
+      //get the APP markers
+      var markers = metadata.parse(reader.result);
+      console.log(markers);
+      
+      var size = getImageSize(img, 1024, 1024);
+
+      //get exif if it exists
+      var startTime = Date.now();
+      var exif = metadata.getExif(reader.result, markers);
+      var exifDuration = (Date.now() - startTime);
+
+      ctx.canvas.height = size.height;
+      ctx.canvas.width = size.width;
+      if (exif.hasExif) {
+        switch(exif.orientation)
+        {
+          case 3:
+            ctx.rotate(Math.PI);
+            ctx.translate(-size.width, -size.height);
+            break;
+          case 6:
+            ctx.canvas.height = size.width;
+            ctx.canvas.width = size.height;
+            ctx.rotate(Math.PI / 2);
+            ctx.translate(0, -size.height);
+            break;
+          case 8:
+            ctx.canvas.height = size.width;
+            ctx.canvas.width = size.height;
+            ctx.rotate(Math.PI * 3/2);
+            ctx.translate(-size.width, 0);
+            break;
+        }
+      }
+      ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, size.width, size.height);
+
+      var dataURL = ctx.canvas.toDataURL('image/jpeg', 0.96);
+      var ab = dataURItoArrayBuffer(dataURL);
+
+      startTime = Date.now();
+      var newImageBlob = metadata.copy(reader.result, ab, markers);
+      var copyDuration = (Date.now() - startTime);
+
+      var template = $('#template').clone();
+
+      var img2 = new Image()
+      img2.src = window.URL.createObjectURL(newImageBlob);
+
+      template.find("#img").append(img2);
+      template.attr('id', 'md_' + index);
+
+      var info = template.find('#info');
+      info.children('#pt').html(copyDuration + "ms");
+      info.children('#et').html(exifDuration + "ms");
+      info.children('#fs').html(newImageBlob.size + " bytes");
+      if (exif.hasExif) {
+        var ex = info.find('#exif');
+        ex.children('#ma').html(exif.make);
+        ex.children('#mo').html(exif.model);
+        ex.children('#ar').html(exif.artist);
+        ex.children('#cr').html(exif.copyright);
+        ex.children('#or').html(exif.orientation);
+        ex.show();
+
+        if (exif.hasGPSLocation) {
+          var gps = ex.find('#gps');
+          gps.children('#lat').html(exif.latitude);
+          gps.children('#long').html(exif.longitude);
+          gps.show();
+          var mapOptions = {
+            center: new google.maps.LatLng(exif.latitude, exif.longitude),
+            zoom: 15,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+          };
+          var map = new google.maps.Map(gps.children('#map')[0], mapOptions);
+
+        }
+      }
+
+      index++;
+      $('#tbl').append(template);
+    };
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+function getImageSize(img, maxWidth, maxHeight) {
+  var ratio = 1;
+
+  if(img.width > maxWidth)
+    ratio = maxWidth / img.width;
+  else if(img.height > maxHeight)
+    ratio = maxHeight / img.height;
+
+  var size = {};
+  size.height = Math.round(img.height * ratio);
+  size.width = Math.round(img.width * ratio);
+
+  return size;
+}
+
+function dataURItoArrayBuffer(dataURI) {
+  var byteString;
+  if (dataURI.split(',')[0].indexOf('base64') >= 0)
+    byteString = atob(dataURI.split(',')[1]);
+  else
+    byteString = unescape(dataURI.split(',')[1]);
+
+  // separate out the mime component
+  var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+
+  // write the bytes of the string to an ArrayBuffer
+  var ab = new ArrayBuffer(byteString.length);
+  var ia = new Uint8Array(ab);
+  for (var i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+
+  return ab;
+}
+
+window.onload = function() {
+  var input = document.getElementById('input');
+  input.addEventListener('change', handleFiles);
+}
+
+</script>
+</head>
+<body style='font-family:Arial, Helvetica, sans-serif;'>
+<h1>metadata.js Example</h1>
+<input type="file" id="input"/>
+<br>
+<div style="display:none">
+  <table id="template" name="template" border="0" cellpadding="0" cellspacing="0" style="bottom-margin:10px;">
+    <tr>
+      <td id="img" style="float:left;"></td>
+      <td id="info" style="vertical-align:top;padding-left:10px;">
+        <b>Copy Duration:</b> <span id="pt"></span><br>
+        <b>Exif Duration:</b> <span id="et"></span><br>
+        <b>File Size:</b> <span id="fs"></span><br>
+        <div id="exif" style="display:none">
+          <b>Make:</b> <span id="ma"></span><br>
+          <b>Model:</b> <span id="mo"></span><br>
+          <b>Artist:</b> <span id="ar"></span><br>
+          <b>Copyright:</b> <span id="cr"></span><br>
+          <b>Orientation:</b> <span id="or"></span><br>
+          <div id="gps" style="display:none">
+            <b>Latitude:</b> <span id="lat"></span><br>
+            <b>Longitude:</b> <span id="long"></span><br>
+            <div id="map" style="width:300px;height:212px"></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+<div id="tbl"></div>
+<canvas id="canvas" style="display:none;"></canvas>
+</body>
+</html>
