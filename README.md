@@ -2,7 +2,7 @@
 metadata.js is a JavaScript library for parsing & copying JPEG metadata from ArrayBuffers.
 
 ## Why?
-While I'm a huge fan of being able to resize images in the browser via the canvas, I hate the fact that it strips information such as EXIF, IPTC, XMP, Camera Makernotes, ICC profiles and JPEG comments. I couldn't find anything to solve this problem, so I made this my weekend project. It works in all modern browsers, but it will require checks to see if the browser supports ArrayBuffer, Uint8Array, and Blobs. This API is production ready and has been tested with thousands of JPEGs.
+While I'm a huge fan of being able to resize images in the browser via the canvas, I hate the fact that it strips information such as EXIF, IPTC, XMP, Camera Makernotes, ICC profiles and JPEG comments. I couldn't find anything to solve this problem, so I made this my weekend project. It works in all modern browsers, but it will require checks to see if the browser supports ArrayBuffer, Uint8Array, and Blobs. This API is production ready and has been tested with [millions](https://www.myspace.com) of JPEGs.
 
 ## Requirements
 metadata.js requires [jDataView](https://github.com/vjeux/jDataView) for reading binary files. Please pull the latest from their repository.
