@@ -65,6 +65,3 @@ if (exif.hasGPSLocation) {
 * [Hexfiend](http://ridiculousfish.com/hexfiend/) - Awesome open source HEX editor (OSX)
 * [code.flickr](http://code.flickr.net/2012/06/01/parsing-exif-client-side-using-javascript-2/) - Good ariticle about how they handle EXIF data. Also some useful information about JPEG markers.
 * [Mozilla Developer Network](https://developer.mozilla.org/) - nuff said.
-
-## License
-Licence: [Do What The Fuck You Want To Public License](http://sam.zoy.org/wtfpl/)
